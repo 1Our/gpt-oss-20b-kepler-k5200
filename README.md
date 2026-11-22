@@ -95,7 +95,7 @@ sched_reserve: CUDA0 compute buffer size = 398.38 MiB
 
 ## Benchmark Screenshot
 
-![GPT-OSS 20B running on NVIDIA Quadro K5200](benchmark-screenshot.jpg)
+![GPT-OSS 20B running on NVIDIA Quadro K5200](benchmark-screenshot.JPG)
 
 **Observed result: 16.10 tokens/sec**
 
