@@ -93,6 +93,23 @@ llama_kv_cache: CUDA0 KV buffer size = 18.00 MiB
 sched_reserve: CUDA0 compute buffer size = 398.38 MiB
 ```
 
+## Benchmark Screenshot
+
+![GPT-OSS 20B running on NVIDIA Quadro K5200](benchmark-screenshot.jpg)
+
+**Observed result: 16.10 tokens/sec**
+
+This screenshot captures GPT-OSS 20B MXFP4 running through the llama.cpp Web UI on an HP Z240 workstation equipped with an NVIDIA Quadro K5200 8GB.
+
+- Context window: 8,192 tokens
+- Generated output: 574 tokens
+- Generation speed: 16.10 tokens/sec
+- Generation time: approximately 35 seconds
+
+A subsequent test with a 16,384-token context window achieved **15.47 tokens/sec**.
+
+These results represent observed generation throughput rather than standardized benchmark averages.
+
 ### Interpretation
 
 All 25 offloadable layers were assigned to the GPU.
