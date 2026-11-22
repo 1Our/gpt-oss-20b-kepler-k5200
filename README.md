@@ -29,58 +29,71 @@ This repository documents a real-world local AI experiment demonstrating that a 
 
 [Hugging Face — Model Repository](https://huggingface.co/HauhauCS/GPT-OSS-20B-Uncensored-HauhauCS-Aggressive)
 
-The model uses a Mixture-of-Experts architecture. Although it contains approximately 20 billion total parameters, only a subset of the model's parameters is activated for each token.
-
-This architecture can offer computational advantages compared with similarly sized dense models.
+GPT-OSS 20B uses a Mixture-of-Experts (MoE) architecture. Although the model contains approximately 20 billion total parameters, only a subset is activated per token.
 
 ---
 
 ## Real-World Benchmark Results
 
+Two separate tests were conducted using the llama.cpp Web UI.
+
 | Test | Context Window | Generation Speed |
 |---|---:|---:|
-| Initial text inference | 8,192 tokens | **16.10 tokens/sec** |
-| Web-assisted weather research | 16,384 tokens | **15.47 tokens/sec** |
+| Self-introduction and capabilities explanation | 8,192 tokens | **16.10 tokens/sec** |
+| Exa-assisted Melbourne weather research | 16,384 tokens | **15.47 tokens/sec** |
 
 **Observed generation throughput: approximately 15–16 tokens/sec.**
 
-These results were obtained through the llama.cpp Web UI on the actual workstation.
+These figures represent real-world, single-run generation measurements rather than standardized benchmark averages. They do not include all model-loading, prompt-processing or external tool latency.
 
-They represent observed single-run inference measurements, not standardized multi-run benchmark averages.
+### Test 1 — Self-Introduction and Capabilities
 
-Generation speed does not include all prompt-processing, model-loading, or external web-tool latency.
+The model was asked to introduce itself and explain its capabilities in Turkish.
+
+The generated response covered topics including programming, data analysis, language translation, research, finance, travel, and general assistance.
+
+This was a text-generation test without requiring external web search.
+
+**Measured results:**
+
+- Context configuration: 8,192 tokens
+- Generated output: 574 tokens
+- Generation throughput: **16.10 tokens/sec**
+- Generation time: approximately 35 seconds
 
 ### Benchmark Screenshot
 
 ![GPT-OSS 20B running at 16.10 tokens/sec on NVIDIA Quadro K5200](./benchmark-screenshot.JPG)
 
-**Screenshot details:**
+The screenshot captures the GPT-OSS 20B self-introduction response in the llama.cpp Web UI, alongside the `btop` system monitor on the HP Z240 workstation.
 
-- Model: GPT-OSS 20B MXFP4
-- Context window: 8,192 tokens
-- Generated output: 574 tokens
-- Generation throughput: **16.10 tokens/sec**
-- Generation time: Approximately 35 seconds
-- System monitoring: btop running on Ubuntu Server
+### Test 2 — Web-Assisted Weather Research
 
-A separate test with a 16,384-token context window achieved **15.47 tokens/sec**.
+In a separate test, GPT-OSS 20B was asked to research Melbourne's seven-day weather forecast using Exa MCP.
+
+The model produced a table containing daily temperatures, rainfall probability, rainfall amounts and wind information.
+
+**Measured results:**
+
+- Context configuration: 16,384 tokens
+- Generation throughput: **15.47 tokens/sec**
+- Web search: Exa MCP invoked successfully
+
+The response contained some translation and interpretation mistakes. Successful tool usage does not guarantee factual accuracy, and the reported forecast was not independently verified as part of this benchmark.
 
 ---
 
 ## Model Configuration
 
-The llama.cpp server was configured with the following settings:
-
 | Parameter | Value |
 |---|---|
-| Context Size | 16,384 tokens |
+| Context Size | 16,384 tokens for second test |
 | Auto-fit | Enabled |
 | GPU Offloading | 25/25 layers |
 | Parallel Requests | 1 |
 | Reasoning | Disabled via server configuration |
 | Model Management | llama.cpp Router Mode |
 | Web Integration | Exa MCP |
-| Web Interface | llama.cpp Web UI |
 
 ### Model-Specific INI Preset
 
@@ -98,7 +111,7 @@ fit-ctx = 16384
 reasoning = off
 ```
 
-### llama.cpp Server Launch Command
+### Server Launch Command
 
 ```bash
 ~/llamacpp-kepler/build/bin/llama-server \
@@ -112,19 +125,15 @@ reasoning = off
   --port 8081
 ```
 
-The server operates in Router Mode, allowing multiple GGUF models to be discovered and selected dynamically.
+The server runs in Router Mode, with a maximum of one model loaded at a time.
 
-The `--models-max 1` parameter limits the server to one loaded model at a time.
-
-Auto-fit is enabled to adjust model configuration according to available device memory.
-
-**Note:** The paths above reflect the original test environment and should be adapted for other installations.
+The paths shown reflect the original test environment and should be adapted for other installations.
 
 ---
 
 ## GPU Offloading and Memory Usage
 
-The following values were captured directly from the llama.cpp model-loading logs with a 16,384-token context window.
+The following measurements were captured from the llama.cpp logs while GPT-OSS 20B was configured for a 16,384-token context window.
 
 ### Actual llama.cpp Output
 
@@ -156,51 +165,21 @@ sched_reserve: CUDA0 compute buffer size = 398.38 MiB
 
 All 25 offloadable layers were assigned to the GPU.
 
-The reported CUDA model buffer, KV cache, and compute buffer total approximately **6.73 GiB**.
+The reported CUDA model buffer, KV cache and compute buffer total approximately **6.73 GiB**. Actual GPU memory consumption can be higher because driver and runtime allocations are not necessarily included.
 
-Actual GPU memory consumption may be higher because the reported figures do not necessarily include all driver and runtime allocations.
+The CPU-mapped model buffer was approximately **10.69 GiB**. This is a file-backed mapping measurement, not necessarily additional exclusive physical RAM usage.
 
-The CPU-mapped model buffer was approximately **10.69 GiB**.
-
-This value should not be interpreted as additional exclusive physical RAM consumption. Memory-mapped model data can be backed by file-system cache and shared memory mappings.
-
-Similarly, CPU-mapped and CUDA model buffer values should not simply be added together to calculate total physical memory consumption.
-
-The experiment demonstrates that successful GPU offloading does not require the model's entire file size to fit exclusively within VRAM.
-
----
-
-## Web Search and Tool-Calling Test
-
-GPT-OSS 20B was tested using **Exa MCP**, integrated through the llama.cpp Web UI.
-
-### Example Task
-
-Research the seven-day weather forecast for Melbourne, Australia, including temperatures, precipitation probability, rainfall amounts, wind conditions, and source information.
-
-### Observed Results
-
-- Successfully invoked the web search integration.
-- Generated a structured seven-day weather forecast.
-- Included daily temperature, precipitation and wind information.
-- Produced a source URL.
-- Completed the response at a reported generation speed of **15.47 tokens/sec**.
-
-The output contained some interpretation and translation errors.
-
-Therefore, successful tool execution should not be interpreted as proof that all generated information was factually accurate.
-
-This experiment primarily demonstrates functional web-tool integration and usable inference throughput on legacy hardware.
+CPU-mapped and GPU allocation figures must not simply be added together to determine total memory consumption.
 
 ---
 
 ## CUDA and Kepler Compatibility
 
-The NVIDIA Quadro K5200 uses the Kepler architecture with CUDA Compute Capability 3.5.
+The NVIDIA Quadro K5200 is based on the Kepler architecture and supports CUDA Compute Capability 3.5.
 
-Modern CUDA software stacks do not necessarily provide native support for this older architecture.
+Modern CUDA software stacks may not support this older GPU architecture without modifications or compatible legacy tooling.
 
-This experiment used a **custom llama.cpp build compatible with the Quadro K5200**.
+This experiment used a custom llama.cpp build supporting the Quadro K5200.
 
 ### Build Information
 
@@ -212,26 +191,23 @@ Backend: CUDA
 Operating System: Ubuntu Server
 ```
 
-The exact CUDA toolkit version, compiler configuration, and CMake build commands have not yet been documented in this repository.
+The exact CUDA toolkit version, compiler options and CMake commands have not yet been verified for publication.
 
-A reproducible build guide will be added after these details are verified from the original test environment.
-
-No unverified CUDA compilation commands are provided here.
+A reproducible build guide may be added after those details are recovered from the original installation.
 
 ---
 
 ## Limitations and Reproducibility
 
 - Results were measured on a specific HP Z240 hardware configuration.
-- The GPU requires a compatible Kepler-capable CUDA build.
-- Measured throughput may vary with prompt length, context size, sampling configuration, and workload.
-- Model-loading time is separate from text-generation speed.
-- External MCP tools can significantly increase total response latency.
-- The 15–16 tokens/sec figures are observed results, not guaranteed performance.
-- Controlled multi-run benchmarks have not yet been performed.
-- Successful loading does not imply that every operation executes exclusively in GPU memory.
-
-Additional benchmarking and build documentation may be added as testing continues.
+- The Quadro K5200 requires a compatible Kepler-capable CUDA build.
+- The reported generation rates are observations from two workloads, not standardized benchmark averages.
+- Throughput varies with prompt length, context size, quantization and inference settings.
+- Model-loading time and external MCP calls add latency beyond token generation.
+- The self-introduction test does not independently verify the model's claimed capabilities.
+- The weather research response was not independently verified for forecast accuracy.
+- Controlled multi-run benchmarking has not yet been performed.
+- Successful GPU offloading does not mean all model data resides exclusively in VRAM.
 
 ---
 
@@ -241,13 +217,14 @@ This experiment demonstrates that **GPT-OSS 20B MXFP4 can run on an HP Z240 work
 
 The system successfully demonstrated:
 
-- GPU offloading of 25/25 layers.
-- A 16,384-token context configuration.
-- Approximately **15–16 tokens/sec** generation throughput.
-- Functional Exa MCP web-tool integration.
+- Full offloading of 25/25 supported layers.
+- A working 16,384-token context configuration.
+- **16.10 tokens/sec** during a self-introduction task at 8K context.
+- **15.47 tokens/sec** during an Exa-assisted research task at 16K context.
+- Functional MCP integration through llama.cpp.
 - Usable local inference on legacy workstation hardware.
 
-**The key finding is that older Kepler-generation GPUs can still provide meaningful local AI inference capability when paired with suitable software, model architectures, and memory-management techniques.**
+**The main finding is that older Kepler-generation GPUs can still deliver meaningful local AI inference performance with suitable software, model architectures and memory-management techniques.**
 
 ---
 
