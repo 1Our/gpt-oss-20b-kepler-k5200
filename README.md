@@ -133,6 +133,8 @@ With a 16K context window, observed generation throughput reached approximately 
 
 The result illustrates the continued potential of older workstation hardware for local AI inference, particularly with Mixture-of-Experts models and appropriate memory management.
 
+[GPT-OSS 20B running at 16.10 tokens/sec on NVIDIA Quadro K5200](benchmark-screenshot.JPG)
+
 ---
 
 **Keywords:** GPT-OSS 20B, Quadro K5200, NVIDIA Kepler, CUDA 3.5, llama.cpp, local LLM, MXFP4, HP Z240, GPU offloading, AI benchmarking.
